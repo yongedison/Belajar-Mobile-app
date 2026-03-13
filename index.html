@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+    <link rel="apple-touch-icon" href="https://emojicdn.elk.sh/🎯?style=apple&size=180">
+
     <meta property="og:title" content="Cyber Catch - Neon Mobile Game">
-    <meta property="og:description" content="Uji kecepatan jempolmu! Bisakah kamu mencapai Level God Mode?">
+    <meta property="og:description" content="Uji kecepatan jempolmu! Bisakah kamu pecahkan rekor tanpa kena jebakan?">
     <meta property="og:image" content="https://emojicdn.elk.sh/🎯?style=apple">
     <meta property="og:type" content="website">
 
-    <title>Cyber Catch - High Score Edition</title>
+    <title>Cyber Catch - Ultra Edition</title>
     <style>
         :root { --neon: #00f2ff; --pink: #ff007f; --trap: #ff3b30; --bg: #0a0a0c; }
         body { 
@@ -18,13 +20,13 @@
         }
         #game-container { position: relative; width: 100vw; height: 100vh; }
         
+        /* Objek Game */
         #target { 
             position: absolute; width: 70px; height: 70px; 
             background: var(--neon); border-radius: 50%; 
             box-shadow: 0 0 20px var(--neon), 0 0 40px var(--neon);
             display: none; transition: transform 0.1s; z-index: 5;
         }
-
         #trap {
             position: absolute; width: 70px; height: 70px;
             background: var(--trap); border-radius: 50%;
@@ -32,42 +34,44 @@
             display: none; z-index: 5;
         }
 
-        .particle {
-            position: absolute; width: 6px; height: 6px;
-            border-radius: 50%; pointer-events: none; z-index: 4;
-        }
-
-        #ui-layer { 
-            position: absolute; top: 40px; width: 100%; text-align: center; 
-            z-index: 2; pointer-events: none;
-        }
+        /* UI & Score */
+        #ui-layer { position: absolute; top: 40px; width: 100%; text-align: center; z-index: 2; pointer-events: none; }
         #score-board { font-size: 50px; font-weight: 900; text-shadow: 0 0 15px var(--neon); }
         #level-indicator { color: var(--pink); font-size: 14px; letter-spacing: 3px; margin-top: 5px; font-weight: bold; }
 
+        /* Layar Menu/Overlay */
         #overlay { 
             position: absolute; z-index: 20; background: rgba(10, 10, 12, 0.95); 
             width: 100%; height: 100%; display: flex; flex-direction: column; 
             align-items: center; justify-content: center; text-align: center; padding: 20px;
         }
         
-        #game-logo {
-            font-size: 70px; margin-bottom: 5px;
-            text-shadow: 0 0 30px var(--neon);
+        /* ILUSTRASI LOGO NEON */
+        #game-illustration {
+            position: relative; width: 120px; height: 120px; margin-bottom: 20px;
             animation: pulse 2s infinite;
         }
+        .illus-circle {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            border-radius: 50%; border: 4px solid var(--neon); box-shadow: 0 0 20px var(--neon);
+        }
+        .illus-1 { width: 100px; height: 100px; opacity: 0.4; }
+        .illus-2 { width: 70px; height: 70px; opacity: 0.7; }
+        .illus-core {
+            width: 30px; height: 30px; background: var(--neon);
+            box-shadow: 0 0 30px var(--neon), 0 0 10px white;
+            animation: core-pulse 1s infinite;
+        }
+        .illus-line { position: absolute; background: var(--pink); box-shadow: 0 0 10px var(--pink); }
+        .illus-h { width: 140px; height: 2px; top: 59px; left: -10px; }
+        .illus-v { width: 2px; height: 140px; top: -10px; left: 59px; }
 
         h1 { font-size: 32px; margin: 0; color: var(--neon); text-shadow: 0 0 20px var(--neon); letter-spacing: 3px; }
         
-        /* Gaya Baru untuk High Score */
         #high-score-display {
-            background: rgba(255, 0, 127, 0.1);
-            border: 1px solid var(--pink);
-            padding: 5px 15px;
-            border-radius: 15px;
-            color: var(--pink);
-            font-size: 14px;
-            margin: 10px 0;
-            font-weight: bold;
+            background: rgba(255, 0, 127, 0.1); border: 1px solid var(--pink);
+            padding: 5px 15px; border-radius: 15px; color: var(--pink);
+            font-size: 14px; margin: 10px 0; font-weight: bold;
         }
 
         #final-score { color: #888; margin: 15px 0 30px 0; line-height: 1.6; font-size: 15px; }
@@ -80,22 +84,27 @@
         }
         button:active { background: var(--neon); color: #000; transform: scale(0.95); }
 
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.8; }
-        }
+        /* Partikel Efek */
+        .particle { position: absolute; width: 6px; height: 6px; border-radius: 50%; pointer-events: none; z-index: 4; }
+
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes core-pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.2); } }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div id="overlay">
-        <div id="game-logo">🎯</div> 
-        <h1 id="status-title">CYBER CATCH</h1>
+        <div id="game-illustration">
+            <div class="illus-line illus-h"></div>
+            <div class="illus-line illus-v"></div>
+            <div class="illus-circle illus-1"></div>
+            <div class="illus-circle illus-2"></div>
+            <div class="illus-circle illus-core"></div>
+        </div>
         
+        <h1 id="status-title">CYBER CATCH</h1>
         <div id="high-score-display">BEST: 0</div>
-
         <p id="final-score">Tap <span style="color:var(--neon)">BIRU</span>, hindari <span style="color:var(--trap)">MERAH</span>!</p>
         <button onclick="startGame()">START MISSION</button>
     </div>
@@ -110,77 +119,43 @@
 </div>
 
 <script>
-    let score = 0;
-    let level = 1;
-    let gameTimer;
-    let audioCtx;
-    
-    const target = document.getElementById('target');
-    const trap = document.getElementById('trap');
-    const scoreBoard = document.getElementById('score-board');
-    const levelInd = document.getElementById('level-indicator');
-    const overlay = document.getElementById('overlay');
-    const statusTitle = document.getElementById('status-title');
-    const finalScore = document.getElementById('final-score');
-    const highScoreDiv = document.getElementById('high-score-display');
+    let score = 0, level = 1, gameTimer, audioCtx;
+    const target = document.getElementById('target'), trap = document.getElementById('trap');
+    const scoreBoard = document.getElementById('score-board'), levelInd = document.getElementById('level-indicator');
+    const overlay = document.getElementById('overlay'), statusTitle = document.getElementById('status-title');
+    const finalScore = document.getElementById('final-score'), highScoreDiv = document.getElementById('high-score-display');
 
-    // Load High Score saat pertama buka aplikasi
     let highScore = localStorage.getItem('cyberCatchHighScore') || 0;
     highScoreDiv.innerHTML = "BEST: " + highScore;
 
-    function initAudio() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-    }
+    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 
-    function playPop() {
+    function playSound(freq, type, duration) {
         if (!audioCtx) return;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(400 + (score * 15), audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.1);
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + duration);
         gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
         osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-    }
-
-    function playFail() {
-        if (!audioCtx) return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(120, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.4);
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
     }
 
     function startGame() {
-        initAudio();
-        score = 0;
-        level = 1;
-        overlay.style.display = 'none';
-        target.style.display = 'block';
+        initAudio(); score = 0; level = 1;
+        overlay.style.display = 'none'; target.style.display = 'block';
         moveElements();
     }
 
     function createParticles(x, y, color) {
         for(let i=0; i<6; i++) {
             const p = document.createElement('div');
-            p.className = 'particle';
-            p.style.background = color;
-            p.style.left = x + 'px';
-            p.style.top = y + 'px';
+            p.className = 'particle'; p.style.background = color;
+            p.style.left = x + 'px'; p.style.top = y + 'px';
             document.body.appendChild(p);
-            const angle = Math.random() * Math.PI * 2;
-            const vel = 3 + Math.random() * 5;
-            const dx = Math.cos(angle) * vel;
-            const dy = Math.sin(angle) * vel;
+            const angle = Math.random() * Math.PI * 2, vel = 3 + Math.random() * 5;
+            const dx = Math.cos(angle) * vel, dy = Math.sin(angle) * vel;
             let op = 1;
             const anim = setInterval(() => {
                 p.style.left = (parseFloat(p.style.left) + dx) + 'px';
@@ -194,31 +169,20 @@
     function moveElements() {
         clearTimeout(gameTimer);
         level = Math.floor(score / 10) + 1;
-        
         let speed = Math.max(650, 1300 - (score * 15));
         gameTimer = setTimeout(() => gameOver("WAKTU HABIS!"), speed);
 
-        const maxX = window.innerWidth - 80;
-        const maxY = window.innerHeight - 150;
-
-        const targetX = Math.floor(Math.random() * maxX);
-        const targetY = Math.floor(Math.random() * (maxY - 150) + 150);
-        target.style.left = targetX + 'px';
-        target.style.top = targetY + 'px';
+        const maxX = window.innerWidth - 80, maxY = window.innerHeight - 150;
+        const targetX = Math.floor(Math.random() * maxX), targetY = Math.floor(Math.random() * (maxY - 150) + 150);
+        target.style.left = targetX + 'px'; target.style.top = targetY + 'px';
 
         if (Math.random() < 0.35 + (level * 0.05)) { 
             let trapX, trapY;
             do {
-                trapX = Math.floor(Math.random() * maxX);
-                trapY = Math.floor(Math.random() * (maxY - 150) + 150);
+                trapX = Math.floor(Math.random() * maxX); trapY = Math.floor(Math.random() * (maxY - 150) + 150);
             } while (Math.abs(trapX - targetX) < 90 && Math.abs(trapY - targetY) < 90);
-            
-            trap.style.left = trapX + 'px';
-            trap.style.top = trapY + 'px';
-            trap.style.display = 'block';
-        } else {
-            trap.style.display = 'none';
-        }
+            trap.style.left = trapX + 'px'; trap.style.top = trapY + 'px'; trap.style.display = 'block';
+        } else { trap.style.display = 'none'; }
         updateUI();
     }
 
@@ -228,46 +192,27 @@
         levelInd.innerHTML = `LEVEL ${level} - ${ranks[Math.min(level-1, 4)]}`;
     }
 
-    target.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        playPop();
-        const t = e.touches[0];
-        createParticles(t.pageX, t.pageY, 'var(--neon)');
-        score++;
-        target.style.transform = "scale(0.7)";
-        setTimeout(() => target.style.transform = "scale(1)", 50);
-        moveElements();
+    target.addEventListener('touchstart', (e) => {
+        e.preventDefault(); playSound(400 + (score * 15), 'sine', 0.1);
+        const t = e.touches[0]; createParticles(t.pageX, t.pageY, 'var(--neon)');
+        score++; moveElements();
     });
 
-    trap.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        const t = e.touches[0];
-        createParticles(t.pageX, t.pageY, 'var(--trap)');
+    trap.addEventListener('touchstart', (e) => {
+        e.preventDefault(); createParticles(e.touches[0].pageX, e.touches[0].pageY, 'var(--trap)');
         gameOver("JEBAKAN TERINJAK!");
     });
 
     function gameOver(reason) {
-        playFail();
-        clearTimeout(gameTimer);
-        
-        // Simpan High Score jika skor baru lebih tinggi
+        playSound(120, 'sawtooth', 0.4); clearTimeout(gameTimer);
         if (score > highScore) {
-            highScore = score;
-            localStorage.setItem('cyberCatchHighScore', highScore);
-            statusTitle.innerHTML = "NEW RECORD!";
-            statusTitle.style.color = "var(--neon)";
-        } else {
-            statusTitle.innerHTML = "MISSION FAILED";
-            statusTitle.style.color = "var(--pink)";
-        }
-
+            highScore = score; localStorage.setItem('cyberCatchHighScore', highScore);
+            statusTitle.innerHTML = "NEW RECORD!"; statusTitle.style.color = "var(--neon)";
+        } else { statusTitle.innerHTML = "MISSION FAILED"; statusTitle.style.color = "var(--pink)"; }
         highScoreDiv.innerHTML = "BEST: " + highScore;
-        target.style.display = 'none';
-        trap.style.display = 'none';
-        overlay.style.display = 'flex';
+        target.style.display = 'none'; trap.style.display = 'none'; overlay.style.display = 'flex';
         finalScore.innerHTML = `<span style="color:var(--trap);font-weight:bold">${reason}</span><br>Skor: ${score} | Level: ${level}`;
     }
 </script>
-
 </body>
 </html>
