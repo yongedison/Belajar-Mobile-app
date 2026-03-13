@@ -1,43 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Game Tangkap Kotak - Pro Mode</title>
+    <title>Cyber Catch - Pro Mobile</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; touch-action: none; color: white; }
-        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        :root { --neon: #00f2ff; --pink: #ff007f; --bg: #0a0a0c; }
+        body { 
+            margin: 0; overflow: hidden; background: var(--bg); 
+            font-family: 'Segoe UI', Roboto, sans-serif; touch-action: none; color: white;
+        }
+        #game-container { position: relative; width: 100vw; height: 100vh; }
+        
+        /* Target Bulat Neon */
         #target { 
             position: absolute; width: 70px; height: 70px; 
-            background: #34C759; border-radius: 15px; 
-            box-shadow: 0 0 25px rgba(52, 199, 89, 0.5);
-            display: none; /* Sembunyi dulu sebelum mulai */
+            background: var(--neon); border-radius: 50%; 
+            box-shadow: 0 0 20px var(--neon), 0 0 40px var(--neon);
+            display: none; transition: transform 0.1s; z-index: 5;
         }
-        #ui-layer { position: absolute; top: 30px; width: 100%; text-align: center; pointer-events: none; }
-        #score-board { font-size: 32px; font-weight: bold; }
-        #message { font-size: 18px; color: #888; margin-top: 10px; }
+
+        /* Efek Partikel */
+        .particle {
+            position: absolute; width: 6px; height: 6px; background: var(--pink);
+            border-radius: 50%; pointer-events: none; z-index: 4;
+        }
+
+        /* UI Styling */
+        #ui-layer { 
+            position: absolute; top: 40px; width: 100%; text-align: center; 
+            z-index: 2; pointer-events: none;
+        }
+        #score-board { font-size: 50px; font-weight: 900; text-shadow: 0 0 15px var(--neon); }
+        #level-indicator { color: var(--pink); font-size: 14px; letter-spacing: 3px; margin-top: 5px; font-weight: bold; }
+
+        /* Overlay Menu */
         #overlay { 
-            position: absolute; z-index: 10; background: rgba(0,0,0,0.8); 
+            position: absolute; z-index: 20; background: rgba(10, 10, 12, 0.95); 
             width: 100%; height: 100%; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; 
+            align-items: center; justify-content: center; text-align: center;
         }
+        h1 { font-size: 42px; margin: 0; color: var(--neon); text-shadow: 0 0 20px var(--neon); letter-spacing: 5px; }
+        #final-score { color: #888; margin: 20px 0 40px 0; line-height: 1.6; }
+        
         button { 
-            padding: 15px 40px; font-size: 20px; border-radius: 30px; 
-            border: none; background: #007AFF; color: white; font-weight: bold;
+            padding: 20px 60px; font-size: 20px; border-radius: 50px; 
+            border: 2px solid var(--neon); background: transparent; 
+            color: var(--neon); font-weight: bold; box-shadow: 0 0 15px var(--neon);
+            cursor: pointer; transition: 0.3s;
         }
+        button:active { background: var(--neon); color: #000; transform: scale(0.95); }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div id="overlay">
-        <h1 id="status-title">Siap Main?</h1>
-        <p id="final-score"></p>
-        <button onclick="startGame()">MULAI</button>
+        <h1 id="status-title">CYBER CATCH</h1>
+        <p id="final-score">Misi: Tap lingkaran sebelum waktu habis.<br>Suara akan aktif setelah tombol ditekan.</p>
+        <button onclick="startGame()">START MISSION</button>
     </div>
 
     <div id="ui-layer">
-        <div id="score-board">Skor: 0</div>
-        <div id="message">Cepat tap sebelum hilang!</div>
+        <div id="score-board">00</div>
+        <div id="level-indicator">LEVEL 1 - RECRUIT</div>
     </div>
     
     <div id="target"></div>
@@ -45,59 +71,121 @@
 
 <script>
     let score = 0;
+    let level = 1;
     let gameTimer;
+    let audioCtx;
+    
     const target = document.getElementById('target');
     const scoreBoard = document.getElementById('score-board');
+    const levelInd = document.getElementById('level-indicator');
     const overlay = document.getElementById('overlay');
     const statusTitle = document.getElementById('status-title');
     const finalScore = document.getElementById('final-score');
 
+    // Inisialisasi Audio (Wajib Interaksi User di iOS)
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    }
+
+    function playPop() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400 + (score * 15), audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function playFail() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(30, audioCtx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+    }
+
     function startGame() {
+        initAudio();
         score = 0;
-        scoreBoard.innerHTML = "Skor: 0";
+        level = 1;
         overlay.style.display = 'none';
         target.style.display = 'block';
         moveTarget();
     }
 
+    function createParticles(x, y) {
+        for(let i=0; i<6; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = x + 'px';
+            p.style.top = y + 'px';
+            document.body.appendChild(p);
+            const angle = Math.random() * Math.PI * 2;
+            const vel = 3 + Math.random() * 5;
+            const dx = Math.cos(angle) * vel;
+            const dy = Math.sin(angle) * vel;
+            let op = 1;
+            const anim = setInterval(() => {
+                p.style.left = (parseFloat(p.style.left) + dx) + 'px';
+                p.style.top = (parseFloat(p.style.top) + dy) + 'px';
+                op -= 0.05; p.style.opacity = op;
+                if(op <= 0) { clearInterval(anim); p.remove(); }
+            }, 20);
+        }
+    }
+
     function moveTarget() {
-        // Reset timer: Jika lewat 1200ms (1.2 detik) nggak di-tap, Game Over!
         clearTimeout(gameTimer);
-        gameTimer = setTimeout(gameOver, 1200);
+        level = Math.floor(score / 10) + 1;
+        // Waktu makin sempit seiring naiknya skor
+        let speed = Math.max(450, 1300 - (score * 30));
+        gameTimer = setTimeout(gameOver, speed);
 
         const maxX = window.innerWidth - 80;
-        const maxY = window.innerHeight - 150; // Jarak aman dari UI atas
-        
+        const maxY = window.innerHeight - 150;
         const newX = Math.floor(Math.random() * maxX);
-        const newY = Math.floor(Math.random() * (maxY - 100) + 100);
+        const newY = Math.floor(Math.random() * (maxY - 150) + 150);
 
         target.style.left = newX + 'px';
         target.style.top = newY + 'px';
-        
-        // Animasi kecil biar makin keren
-        target.style.transform = "scale(1)";
+        updateUI();
+    }
+
+    function updateUI() {
+        scoreBoard.innerHTML = score < 10 ? "0" + score : score;
+        const ranks = ["RECRUIT", "AGENT", "ELITE", "CYBER GHOST", "GOD MODE"];
+        levelInd.innerHTML = `LEVEL ${level} - ${ranks[Math.min(level-1, 4)]}`;
     }
 
     target.addEventListener('touchstart', function(e) {
         e.preventDefault();
+        playPop();
+        const t = e.touches[0];
+        createParticles(t.pageX, t.pageY);
         score++;
-        scoreBoard.innerHTML = "Skor: " + score;
-        
-        // Efek visual saat ditekan
         target.style.transform = "scale(0.8)";
-        
-        // Makin tinggi skor, makin cepat waktunya (maksimal 600ms)
-        let speed = Math.max(600, 1200 - (score * 20));
-        
+        setTimeout(() => target.style.transform = "scale(1)", 50);
         moveTarget();
     });
 
     function gameOver() {
-        clearTimeout(gameTimer);
+        playFail();
         target.style.display = 'none';
         overlay.style.display = 'flex';
-        statusTitle.innerHTML = "GAME OVER!";
-        finalScore.innerHTML = "Skor Akhir Kamu: " + score;
+        statusTitle.innerHTML = "GAME OVER";
+        statusTitle.style.color = "var(--pink)";
+        finalScore.innerHTML = `Skor Akhir: ${score}<br>Level: ${level}<br>Coba lagi?`;
     }
 </script>
 
